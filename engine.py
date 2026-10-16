@@ -6,13 +6,20 @@ from google import genai
 from google.genai import types
 import resend
 
-# 1. Connect to Supabase, Gemini, and Resend using GitHub Secrets
-SUPABASE_URL = os.environ.get("SUPABASE_URL")
-SUPABASE_KEY = os.environ.get("SUPABASE_KEY")
-supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
+# 1. Clean any invisible spaces (\xa0) or extra URL paths from GitHub Secrets
+def clean_secret(val):
+    if not val:
+        return ""
+    return val.replace("\xa0", "").strip()
 
-gemini_client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
-resend.api_key = os.environ.get("RESEND_API_KEY")
+SUPABASE_URL = clean_secret(os.environ.get("SUPABASE_URL")).split("/rest/v1")[0].rstrip("/")
+SUPABASE_KEY = clean_secret(os.environ.get("SUPABASE_KEY"))
+GEMINI_API_KEY = clean_secret(os.environ.get("GEMINI_API_KEY"))
+RESEND_API_KEY = clean_secret(os.environ.get("RESEND_API_KEY"))
+
+supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
+gemini_client = genai.Client(api_key=GEMINI_API_KEY)
+resend.api_key = RESEND_API_KEY
 
 def fetch_global_news():
     """Fetches top global news developments from open RSS feeds."""
@@ -42,12 +49,8 @@ def generate_strategic_brief(user_profile, raw_news):
     - Geography Focus: {geography}
 
     Provide your strategic intelligence in strict JSON format with exactly two keys:
-    1. "teaser": A high-impact, 2-to-3 sentence executive summary highlighting the #1 risk or strategic takeaway for their sector and region today.
-    2. "full_content": A comprehensive, structured 4-paragraph strategic intelligence briefing covering:
-       - Geopolitical & Regulatory Risk
-       - Supply Chain & Operational Impact
-       - Economic & Market Outlook
-       - Strategic Actionable Takeaway
+    1. "teaser": A high-impact, 2-to-3 sentence executive summary highlighting the #1 risk or strategic takeaway for their sector and region today (plain text string).
+    2. "full_content": A comprehensive, structured 4-paragraph strategic intelligence briefing as a single plain text string (use \\n\\n between paragraphs) covering Geopolitical Risk, Supply Chain Impact, Economic Outlook, and Strategic Actionable Takeaway.
     """
 
     response = gemini_client.models.generate_content(
@@ -77,11 +80,20 @@ def run_daily_pipeline():
             # 1. Generate AI Brief
             generated_data = generate_strategic_brief(user, raw_news)
 
+            teaser_text = str(generated_data.get("teaser", ""))
+            full_content = generated_data.get("full_content", "")
+            if isinstance(full_content, dict):
+                full_content = "\n\n".join([f"{k}:\n{v}" for k, v in full_content.items()])
+            elif isinstance(full_content, list):
+                full_content = "\n\n".join([str(item) for item in full_content])
+            else:
+                full_content = str(full_content)
+
             # 2. Save Full Brief into Supabase daily_briefs table
             db_insert = supabase.table("daily_briefs").insert({
                 "user_id": user["id"],
-                "teaser": generated_data["teaser"],
-                "full_content": generated_data["full_content"]
+                "teaser": teaser_text,
+                "full_content": full_content
             }).execute()
 
             brief_id = db_insert.data[0]["id"]
@@ -99,7 +111,7 @@ def run_daily_pipeline():
                 <hr style="border: none; border-top: 1px solid #e0e0e0; margin: 16px 0;">
                 <p style="font-size: 16px;"><strong>Executive Summary:</strong></p>
                 <p style="font-size: 15px; background-color: #f8f9fa; padding: 15px; border-left: 4px solid #0b2545;">
-                    {generated_data['teaser']}
+                    {teaser_text}
                 </p>
                 <div style="margin: 28px 0;">
                     <a href="{read_url}" style="background-color: #0b2545; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 4px; font-weight: bold; display: inline-block;">
@@ -112,9 +124,6 @@ def run_daily_pipeline():
             """
 
             resend.Emails.send({
-                # Uses Resend's default test address first so you can test immediately.
-                # Once you verify avellonintelligence.com in Resend, change this to:
-                # "Avellon Intelligence <brief@avellonintelligence.com>"
                 "from": "Avellon Intelligence <onboarding@resend.dev>",
                 "to": [user["email"]],
                 "subject": f"Avellon Daily Brief: {user.get('sector')} Strategic Update",
@@ -124,6 +133,7 @@ def run_daily_pipeline():
 
         except Exception as e:
             print(f"Error processing {user['email']}: {e}")
+            raise e
 
 if __name__ == "__main__":
     run_daily_pipeline()
