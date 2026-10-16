@@ -1,5 +1,6 @@
 import os
 import json
+import time
 import feedparser
 from supabase import create_client, Client
 from google import genai
@@ -35,7 +36,7 @@ def fetch_global_news():
     return "\n".join(news_items)
 
 def generate_strategic_brief(user_profile, raw_news):
-    """Generates a custom JSON teaser and full strategic brief via Gemini."""
+    """Generates a custom JSON teaser and full strategic brief via Gemini with auto-retry."""
     sector = user_profile.get("sector") or "Global Markets"
     geography = user_profile.get("geography") or "Global"
 
@@ -53,14 +54,24 @@ def generate_strategic_brief(user_profile, raw_news):
     2. "full_content": A comprehensive, structured 4-paragraph strategic intelligence briefing as a single plain text string (use \\n\\n between paragraphs) covering Geopolitical Risk, Supply Chain Impact, Economic Outlook, and Strategic Actionable Takeaway.
     """
 
-    response = gemini_client.models.generate_content(
-       model="gemini-3.8-flash",
-        contents=prompt,
-        config=types.GenerateContentConfig(
-            response_mime_type="application/json",
-        )
-    )
-    return json.loads(response.text)
+    # Auto-retry up to 4 times if Google's server has a temporary 503 traffic spike
+    for attempt in range(1, 5):
+        try:
+            response = gemini_client.models.generate_content(
+                model="gemini-2.5-flash",
+                contents=prompt,
+                config=types.GenerateContentConfig(
+                    response_mime_type="application/json",
+                )
+            )
+            return json.loads(response.text)
+        except Exception as e:
+            print(f"Attempt {attempt} encountered server busy/error: {e}")
+            if attempt < 4:
+                print("Waiting 12 seconds before retrying...")
+                time.sleep(12)
+            else:
+                raise e
 
 def run_daily_pipeline():
     print("Starting Avellon Intelligence Pipeline...")
