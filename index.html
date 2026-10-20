@@ -20,11 +20,30 @@
             justify-content: space-between;
             align-items: center;
         }
+        .topbar-right {
+            display: flex;
+            align-items: center;
+            gap: 18px;
+        }
         .topbar a {
             color: #f4d35e;
             text-decoration: none;
             font-size: 14px;
             font-weight: bold;
+        }
+        .logout-btn {
+            background-color: #b8860b;
+            color: #ffffff;
+            border: none;
+            padding: 7px 14px;
+            font-size: 13px;
+            font-weight: bold;
+            border-radius: 4px;
+            cursor: pointer;
+            display: none;
+        }
+        .logout-btn:hover {
+            background-color: #9a7009;
         }
         .container {
             max-width: 820px;
@@ -54,6 +73,18 @@
             text-transform: uppercase;
             letter-spacing: 1px;
         }
+        .user-banner {
+            background: #eef3f8;
+            border: 1px solid #d0dce8;
+            padding: 12px 18px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            color: #0b2545;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
         .brief-box {
             white-space: pre-wrap;
             font-size: 16px;
@@ -63,14 +94,43 @@
             padding: 28px;
             border-left: 4px solid #0b2545;
             border-radius: 4px;
-            margin-bottom: 36px;
+            margin-bottom: 24px;
+        }
+        .history-bar {
+            margin-top: 20px;
+            padding-top: 16px;
+            border-top: 1px solid #e5e7eb;
+        }
+        .history-bar label {
+            font-size: 13px;
+            font-weight: bold;
+            color: #0b2545;
+        }
+        .tabs {
+            display: flex;
+            border-bottom: 2px solid #e5e7eb;
+            margin-bottom: 24px;
+        }
+        .tab-btn {
+            flex: 1;
+            padding: 13px;
+            font-size: 15px;
+            font-weight: bold;
+            border: none;
+            background: none;
+            cursor: pointer;
+            color: #666;
+            border-bottom: 3px solid transparent;
+        }
+        .tab-btn.active {
+            color: #0b2545;
+            border-bottom: 3px solid #0b2545;
         }
         .form-card {
             background: #f8f9fa;
             border: 1px solid #e5e7eb;
             padding: 32px;
             border-radius: 6px;
-            margin-top: 24px;
         }
         .form-card h2 {
             margin-top: 0;
@@ -118,7 +178,7 @@
         .submit-btn:hover {
             background-color: #163a66;
         }
-        #status-msg {
+        .status-msg {
             margin-top: 14px;
             font-weight: bold;
             text-align: center;
@@ -142,7 +202,10 @@
 
     <div class="topbar">
         <span><strong>AVELLON INTELLIGENCE</strong> | Strategic Risk Portal</span>
-        <a href="https://www.avellonintelligence.com">&larr; Back to Main Website</a>
+        <div class="topbar-right">
+            <button id="logout-btn" class="logout-btn" onclick="handleLogout()">Log Out</button>
+            <a href="https://www.avellonintelligence.com">&larr; Back to Main Website</a>
+        </div>
     </div>
 
     <div class="container">
@@ -151,103 +214,139 @@
             <div class="subtitle">Domain &amp; Geography Specific Strategic Intelligence</div>
         </div>
 
-        <!-- Dynamic Reader Section (Shown when clicking Read More from Email) -->
+        <!-- VIEW 1: FULL BRIEF READER (Auto-opens on email link click or after login) -->
         <div id="reader-section" style="display: none;">
+            <div class="user-banner" id="user-banner">
+                <span id="subscriber-info">Verified Subscriber Briefing</span>
+                <button onclick="handleLogout()" style="background:#0b2545; color:#fff; border:none; padding:6px 12px; border-radius:4px; cursor:pointer; font-size:12px; font-weight:bold;">
+                    Log Out / Switch Account
+                </button>
+            </div>
             <div id="brief-content" class="brief-box">Loading your strategic intelligence briefing...</div>
+
+            <div class="history-bar" id="history-bar" style="display: none;">
+                <label for="brief-selector">Previous Briefings Archive:</label>
+                <select id="brief-selector" onchange="loadBriefById(this.value)" style="margin-top: 8px; width: 100%;"></select>
+            </div>
         </div>
 
-        <!-- Subscription Onboarding Form -->
-        <div class="form-card" id="signup-section">
-            <h2>Subscribe to Avellon's Daily Brief</h2>
-            <p style="font-size: 14px; color: #555; margin-bottom: 22px;">
-                Receive tailored geopolitical, supply chain, and sectoral risk intelligence every morning at 8:00 AM.
-            </p>
+        <!-- VIEW 2: SIGN UP & LOGIN PORTAL (Default when visiting site directly or after Log Out) -->
+        <div id="auth-section">
+            <div class="tabs">
+                <button class="tab-btn active" id="tab-signup" onclick="switchTab('signup')">New Subscriber Sign Up</button>
+                <button class="tab-btn" id="tab-login" onclick="switchTab('login')">Existing Subscriber Login</button>
+            </div>
 
-            <form id="subscribe-form">
-                <div class="form-grid">
-                    <div class="form-group">
-                        <label>Full Name *</label>
-                        <input type="text" id="full_name" placeholder="Enter your full name" required>
-                    </div>
-                    <div class="form-group">
-                        <label>Work / Institutional Email *</label>
-                        <input type="email" id="email" placeholder="name@company.com" required>
-                    </div>
-                    <div class="form-group">
-                        <label>Phone Number (Optional)</label>
-                        <input type="tel" id="phone" placeholder="+1 / +91 ...">
-                    </div>
-                    <div class="form-group">
-                        <label>Subscription Tier *</label>
-                        <select id="tier" required>
-                            <option value="basic">Basic Tier (Free Daily Highlights)</option>
-                            <option value="premium">Professional / Executive Tier</option>
-                            <option value="institutional_starter">Institutional - SMB &amp; Boutique Advisory</option>
-                            <option value="institutional_pro">Institutional - Mid-Market &amp; Trading Desks</option>
-                            <option value="institutional_enterprise">Institutional - Enterprise, P&amp;I Clubs &amp; Gov</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label>Country *</label>
-                        <input type="text" id="country" placeholder="e.g., India, Singapore, UK, USA" required>
-                    </div>
-                    <div class="form-group">
-                        <label>City *</label>
-                        <input type="text" id="city" placeholder="e.g., Chennai, London, Dubai" required>
-                    </div>
-                    <div class="form-group">
-                        <label>Nature of Work / Role *</label>
-                        <select id="nature_of_work" required>
-                            <option value="">-- Select Role --</option>
-                            <option value="Executive / C-Suite">Executive / C-Suite</option>
-                            <option value="Risk & Threat Analyst">Risk &amp; Threat Analyst</option>
-                            <option value="Supply Chain & Logistics">Supply Chain &amp; Maritime Practitioner</option>
-                            <option value="Commodity & Energy Trader">Commodity &amp; Energy Trader</option>
-                            <option value="Policy Maker & Diplomat">Policy Maker / Government</option>
-                            <option value="Military & Defense Veteran">Military / Defense / Security</option>
-                            <option value="Independent Researcher">Independent Researcher / Consultant</option>
-                            <option value="Journalist & Media">Verified Journalist / Media Professional</option>
-                            <option value="University Student">Verified College / University Student</option>
-                            <option value="Other">Other</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label>Target Industry / Sector *</label>
-                        <select id="sector" required>
-                            <option value="">-- Select Target Sector --</option>
-                            <option value="Shipping & Logistics">Shipping, Maritime &amp; Logistics</option>
-                            <option value="P&I Clubs & Marine Insurance">P&amp;I Clubs &amp; Marine Insurance</option>
-                            <option value="Energy, Oil & Gas">Energy, Oil &amp; Gas</option>
-                            <option value="Coal, Mining & Critical Minerals">Coal, Mining &amp; Critical Minerals</option>
-                            <option value="Nuclear & Renewable Energy">Nuclear &amp; Renewable Energy</option>
-                            <option value="Semiconductors & Tech Supply Chain">Semiconductors &amp; Tech Supply Chain</option>
-                            <option value="Automotive & Manufacturing">Automotive &amp; Heavy Manufacturing</option>
-                            <option value="Banking, Finance & Insurance">Banking, Finance &amp; Insurance</option>
-                            <option value="Defense, Aerospace & Security">Defense, Aerospace &amp; Security</option>
-                            <option value="Agriculture & Global Commodities">Agriculture &amp; Global Commodities</option>
-                            <option value="Government, Policy & Academia">Government, Policy &amp; Academia</option>
-                        </select>
-                    </div>
-                    <div class="form-group full">
-                        <label>Target Geographical Focus *</label>
-                        <select id="geography" required>
-                            <option value="">-- Select Primary Region --</option>
-                            <option value="Indo-Pacific & South China Sea">Indo-Pacific &amp; South China Sea</option>
-                            <option value="Middle East, Red Sea & Persian Gulf">Middle East, Red Sea &amp; Persian Gulf</option>
-                            <option value="South Asia & Indian Ocean">South Asia &amp; Indian Ocean Region</option>
-                            <option value="Europe, Black Sea & Mediterranean">Europe, Black Sea &amp; Mediterranean</option>
-                            <option value="Eurasia, Russia & Central Asia">Eurasia, Russia &amp; Central Asia</option>
-                            <option value="North America & Trans-Pacific">North America &amp; Trans-Pacific</option>
-                            <option value="Latin America & South Atlantic">Latin America &amp; South Atlantic</option>
-                            <option value="Africa, Gulf of Guinea & Horn of Africa">Africa, Gulf of Guinea &amp; Horn of Africa</option>
-                            <option value="Global Multi-Region">Global Multi-Region (All Chokepoints)</option>
-                        </select>
-                    </div>
-                </div>
+            <!-- TAB A: SIGN UP FORM -->
+            <div class="form-card" id="signup-card">
+                <h2>Subscribe to Avellon's Daily Brief</h2>
+                <p style="font-size: 14px; color: #555; margin-bottom: 22px;">
+                    Receive tailored geopolitical, supply chain, and sectoral risk intelligence every morning at 8:00 AM.
+                </p>
 
-                <button type="submit" class="submit-btn" id="submit-btn">Activate Daily Strategic Brief &rarr;</button>
-                <div id="status-msg"></div>
-            </form>
+                <form id="subscribe-form">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label>Full Name *</label>
+                            <input type="text" id="full_name" placeholder="Enter your full name" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Work / Institutional Email *</label>
+                            <input type="email" id="email" placeholder="name@company.com" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Phone Number (Optional)</label>
+                            <input type="tel" id="phone" placeholder="+1 / +91 ...">
+                        </div>
+                        <div class="form-group">
+                            <label>Subscription Tier *</label>
+                            <select id="tier" required>
+                                <option value="basic">Basic Tier (Free Daily Highlights)</option>
+                                <option value="premium">Professional / Executive Tier</option>
+                                <option value="institutional_starter">Institutional - SMB &amp; Boutique Advisory</option>
+                                <option value="institutional_pro">Institutional - Mid-Market &amp; Trading Desks</option>
+                                <option value="institutional_enterprise">Institutional - Enterprise, P&amp;I Clubs &amp; Gov</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Country *</label>
+                            <input type="text" id="country" placeholder="e.g., India, Singapore, UK, USA" required>
+                        </div>
+                        <div class="form-group">
+                            <label>City *</label>
+                            <input type="text" id="city" placeholder="e.g., Chennai, London, Dubai" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Nature of Work / Role *</label>
+                            <select id="nature_of_work" required>
+                                <option value="">-- Select Role --</option>
+                                <option value="Executive / C-Suite">Executive / C-Suite</option>
+                                <option value="Risk & Threat Analyst">Risk &amp; Threat Analyst</option>
+                                <option value="Supply Chain & Logistics">Supply Chain &amp; Maritime Practitioner</option>
+                                <option value="Commodity & Energy Trader">Commodity &amp; Energy Trader</option>
+                                <option value="Policy Maker & Diplomat">Policy Maker / Government</option>
+                                <option value="Military & Defense Veteran">Military / Defense / Security</option>
+                                <option value="Independent Researcher">Independent Researcher / Consultant</option>
+                                <option value="Journalist & Media">Verified Journalist / Media Professional</option>
+                                <option value="University Student">Verified College / University Student</option>
+                                <option value="Other">Other</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Target Industry / Sector *</label>
+                            <select id="sector" required>
+                                <option value="">-- Select Target Sector --</option>
+                                <option value="Shipping & Logistics">Shipping, Maritime &amp; Logistics</option>
+                                <option value="P&I Clubs & Marine Insurance">P&amp;I Clubs &amp; Marine Insurance</option>
+                                <option value="Energy, Oil & Gas">Energy, Oil &amp; Gas</option>
+                                <option value="Coal, Mining & Critical Minerals">Coal, Mining &amp; Critical Minerals</option>
+                                <option value="Nuclear & Renewable Energy">Nuclear &amp; Renewable Energy</option>
+                                <option value="Semiconductors & Tech Supply Chain">Semiconductors &amp; Tech Supply Chain</option>
+                                <option value="Automotive & Manufacturing">Automotive &amp; Heavy Manufacturing</option>
+                                <option value="Banking, Finance & Insurance">Banking, Finance &amp; Insurance</option>
+                                <option value="Defense, Aerospace & Security">Defense, Aerospace &amp; Security</option>
+                                <option value="Agriculture & Global Commodities">Agriculture &amp; Global Commodities</option>
+                                <option value="Government, Policy & Academia">Government, Policy &amp; Academia</option>
+                            </select>
+                        </div>
+                        <div class="form-group full">
+                            <label>Target Geographical Focus *</label>
+                            <select id="geography" required>
+                                <option value="">-- Select Primary Region --</option>
+                                <option value="Indo-Pacific & Middle East">Indo-Pacific &amp; Middle East</option>
+                                <option value="Indo-Pacific & South China Sea">Indo-Pacific &amp; South China Sea</option>
+                                <option value="Middle East, Red Sea & Persian Gulf">Middle East, Red Sea &amp; Persian Gulf</option>
+                                <option value="South Asia & Indian Ocean">South Asia &amp; Indian Ocean Region</option>
+                                <option value="Europe, Black Sea & Mediterranean">Europe, Black Sea &amp; Mediterranean</option>
+                                <option value="Eurasia, Russia & Central Asia">Eurasia, Russia &amp; Central Asia</option>
+                                <option value="North America & Trans-Pacific">North America &amp; Trans-Pacific</option>
+                                <option value="Latin America & South Atlantic">Latin America &amp; South Atlantic</option>
+                                <option value="Africa, Gulf of Guinea & Horn of Africa">Africa, Gulf of Guinea &amp; Horn of Africa</option>
+                                <option value="Global Multi-Region">Global Multi-Region (All Chokepoints)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="submit-btn" id="submit-btn">Activate Daily Strategic Brief &rarr;</button>
+                    <div id="signup-status" class="status-msg"></div>
+                </form>
+            </div>
+
+            <!-- TAB B: 1-CLICK EMAIL LOGIN -->
+            <div class="form-card" id="login-card" style="display: none;">
+                <h2>Subscriber Portal Login</h2>
+                <p style="font-size: 14px; color: #555; margin-bottom: 22px;">
+                    Enter your registered Email ID to view your latest full daily strategic briefs.
+                </p>
+                <form id="login-form">
+                    <div class="form-group">
+                        <label>Registered Email ID *</label>
+                        <input type="email" id="login_email" placeholder="Enter your subscribed email address" required>
+                    </div>
+                    <button type="submit" class="submit-btn" id="login-btn">Access My Daily Briefs &rarr;</button>
+                    <div id="login-status" class="status-msg"></div>
+                </form>
+            </div>
         </div>
 
         <div class="footer">
@@ -257,44 +356,144 @@
 
     <script>
         const SUPABASE_URL = "https://eanqroohwtwuxeoeusll.supabase.co";
-        const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVhbnFyb29od3R3dXhlb2V1c2xsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIxNjE3ODEsImV4cCI6MjEwNzczNzc4MX0.M9AmthpjhJWmhFYtJRisblzBWIdddiFMldZjF56NkOw";
+        // Replace with your actual Supabase anon public key below:
+        const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVhbnFyb29od3R3dXhlb2V1c2xsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTIxNjE3ODEsImV4cCI6MjEwNzczNzc4MX0.M9AmthpjhJWmhFYtJRisblzBWIdddiFMldZjF56NkOw".replace(/\u00a0/g, "").trim();
 
-        // 1. Check if URL has ?id=... to load full intelligence brief
-        async function checkAndLoadBrief() {
-            const urlParams = new URLSearchParams(window.location.search);
-            const briefId = urlParams.get('id');
+        const apiHeaders = {
+            'Content-Type': 'application/json',
+            'apikey': SUPABASE_ANON_KEY,
+            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
+        };
 
-            if (!briefId) return;
+        function switchTab(tab) {
+            document.getElementById('tab-signup').classList.toggle('active', tab === 'signup');
+            document.getElementById('tab-login').classList.toggle('active', tab === 'login');
+            document.getElementById('signup-card').style.display = tab === 'signup' ? 'block' : 'none';
+            document.getElementById('login-card').style.display = tab === 'login' ? 'block' : 'none';
+        }
 
-            const readerSection = document.getElementById('reader-section');
+        function showReaderView(subscriberText) {
+            document.getElementById('auth-section').style.display = 'none';
+            document.getElementById('reader-section').style.display = 'block';
+            document.getElementById('logout-btn').style.display = 'inline-block';
+            if (subscriberText) {
+                document.getElementById('subscriber-info').innerText = subscriberText;
+            }
+        }
+
+        function handleLogout() {
+            localStorage.removeItem('avellon_subscriber');
+            window.history.replaceState({}, document.title, window.location.pathname);
+            document.getElementById('reader-section').style.display = 'none';
+            document.getElementById('logout-btn').style.display = 'none';
+            document.getElementById('auth-section').style.display = 'block';
+            switchTab('login');
+        }
+
+        async function loadBriefById(briefId) {
             const contentBox = document.getElementById('brief-content');
-            readerSection.style.display = 'block';
+            contentBox.innerText = "Loading your strategic intelligence briefing...";
+            showReaderView();
 
             try {
-                const response = await fetch(`${SUPABASE_URL}/rest/v1/daily_briefs?id=eq.${encodeURIComponent(briefId)}&select=full_content`, {
+                const res = await fetch(`${SUPABASE_URL}/rest/v1/daily_briefs?id=eq.${encodeURIComponent(briefId)}&select=id,full_content,user_id,created_at`, {
                     method: 'GET',
-                    headers: {
-                        'apikey': SUPABASE_ANON_KEY,
-                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`
-                    }
+                    headers: apiHeaders
                 });
+                const data = await res.json();
 
-                const data = await response.json();
                 if (data && data.length > 0) {
-                    contentBox.innerText = data[0].full_content;
+                    const brief = data[0];
+                    contentBox.innerText = brief.full_content;
+
+                    // Automatically identify subscriber from user_id for zero-friction login
+                    if (brief.user_id) {
+                        const userRes = await fetch(`${SUPABASE_URL}/rest/v1/subscribers?id=eq.${encodeURIComponent(brief.user_id)}&select=id,email,sector,geography`, {
+                            method: 'GET',
+                            headers: apiHeaders
+                        });
+                        const users = await userRes.json();
+                        if (users && users.length > 0) {
+                            const u = users[0];
+                            localStorage.setItem('avellon_subscriber', JSON.stringify(u));
+                            document.getElementById('subscriber-info').innerText = `${u.email} | ${u.sector || 'Global'} (${u.geography || 'Global'})`;
+                            loadUserArchive(u.id, brief.id);
+                        }
+                    }
                 } else {
                     contentBox.innerText = "Briefing not found or expired.";
                 }
-            } catch (err) {
+            } catch (e) {
                 contentBox.innerText = "Unable to load briefing. Please check your connection.";
             }
         }
 
-        // 2. Handle Subscriber Form Submission
+        async function loadUserArchive(userId, activeBriefId) {
+            try {
+                const res = await fetch(`${SUPABASE_URL}/rest/v1/daily_briefs?user_id=eq.${encodeURIComponent(userId)}&select=id,created_at,teaser&order=created_at.desc&limit=15`, {
+                    method: 'GET',
+                    headers: apiHeaders
+                });
+                const briefs = await res.json();
+                if (briefs && briefs.length > 0) {
+                    const selector = document.getElementById('brief-selector');
+                    selector.innerHTML = briefs.map(b => {
+                        const d = new Date(b.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+                        const sel = b.id === activeBriefId ? 'selected' : '';
+                        return `<option value="${b.id}" ${sel}>${d} — ${(b.teaser || 'Daily Strategic Brief').substring(0, 65)}...</option>`;
+                    }).join('');
+                    document.getElementById('history-bar').style.display = 'block';
+                }
+            } catch (e) {}
+        }
+
+        // 1. Login with Email ID
+        document.getElementById('login-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const emailInput = document.getElementById('login_email').value.trim();
+            const statusMsg = document.getElementById('login-status');
+            statusMsg.style.color = "#0b2545";
+            statusMsg.innerText = "Verifying subscriber...";
+
+            try {
+                const res = await fetch(`${SUPABASE_URL}/rest/v1/subscribers?email=ilike.${encodeURIComponent(emailInput)}&select=id,email,sector,geography`, {
+                    method: 'GET',
+                    headers: apiHeaders
+                });
+                const users = await res.json();
+
+                if (users && users.length > 0) {
+                    const user = users[0];
+                    localStorage.setItem('avellon_subscriber', JSON.stringify(user));
+                    statusMsg.innerText = "";
+                    showReaderView(`${user.email} | ${user.sector || 'Global'} (${user.geography || 'Global'})`);
+
+                    const bRes = await fetch(`${SUPABASE_URL}/rest/v1/daily_briefs?user_id=eq.${encodeURIComponent(user.id)}&select=id,full_content&order=created_at.desc&limit=1`, {
+                        method: 'GET',
+                        headers: apiHeaders
+                    });
+                    const briefs = await bRes.json();
+                    if (briefs && briefs.length > 0) {
+                        document.getElementById('brief-content').innerText = briefs[0].full_content;
+                        loadUserArchive(user.id, briefs[0].id);
+                    } else {
+                        document.getElementById('brief-content').innerText = "Your subscription is active! Your first customized briefing will be generated at the next 8:00 AM run.";
+                    }
+                } else {
+                    statusMsg.style.color = "#842029";
+                    statusMsg.innerText = "No active subscription found for this Email ID. Please Sign Up first.";
+                }
+            } catch (err) {
+                statusMsg.style.color = "#842029";
+                statusMsg.innerText = "Connection error. Please try again.";
+            }
+        });
+
+        // 2. New Subscriber Registration
         document.getElementById('subscribe-form').addEventListener('submit', async (e) => {
             e.preventDefault();
             const btn = document.getElementById('submit-btn');
-            const statusMsg = document.getElementById('status-msg');
+            const statusMsg = document.getElementById('signup-status');
             btn.disabled = true;
             btn.innerText = "Registering Profile...";
 
@@ -314,12 +513,7 @@
             try {
                 const res = await fetch(`${SUPABASE_URL}/rest/v1/subscribers`, {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'apikey': SUPABASE_ANON_KEY,
-                        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-                        'Prefer': 'return=minimal'
-                    },
+                    headers: { ...apiHeaders, 'Prefer': 'return=minimal' },
                     body: JSON.stringify(payload)
                 });
 
@@ -328,9 +522,8 @@
                     statusMsg.innerText = "Subscription Confirmed! Your customized Avellon Daily Brief will arrive at 8:00 AM.";
                     document.getElementById('subscribe-form').reset();
                 } else {
-                    const errData = await res.json();
                     statusMsg.style.color = "#842029";
-                    statusMsg.innerText = errData.message || "This email is already subscribed.";
+                    statusMsg.innerText = "This Email ID is already subscribed. Click 'Existing Subscriber Login' above to view your briefs.";
                 }
             } catch (error) {
                 statusMsg.style.color = "#842029";
@@ -341,7 +534,27 @@
             }
         });
 
-        checkAndLoadBrief();
+        // 3. Auto-Initialize on Page Load
+        (function initPortal() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const briefId = urlParams.get('id');
+
+            // Zero-friction magic link from email
+            if (briefId) {
+                loadBriefById(briefId);
+                return;
+            }
+
+            // Or restore logged-in session if already logged in
+            const savedUser = localStorage.getItem('avellon_subscriber');
+            if (savedUser) {
+                try {
+                    const user = JSON.parse(savedUser);
+                    document.getElementById('login_email').value = user.email;
+                    document.getElementById('login-form').dispatchEvent(new Event('submit'));
+                } catch (e) {}
+            }
+        })();
     </script>
 </body>
 </html>
