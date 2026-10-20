@@ -199,7 +199,7 @@ def run_daily_pipeline():
             }).execute()
 
             brief_id = db_insert.data[0]["id"]
-            read_url = f"https://www.avellonintelligence.com/brief?id={brief_id}"
+            read_url = f"https://brief.avellonintelligence.com/?id={brief_id}"
 
             # 4. Build and send the concise curated email
             html_email = build_email_html(today_str, sector, geography, generated_data, read_url)
